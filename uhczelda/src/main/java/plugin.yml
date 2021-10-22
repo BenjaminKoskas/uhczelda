@@ -1,0 +1,10 @@
+name: UHCZelda
+version: 1.0.0
+description: Permet de jouer au UHC Zelda
+main: fr.bk.uhczelda.UZMain
+depend: [ProtocolLib]
+api-version: 1.13
+commands:
+  uz:
+  revive:
+  chat:

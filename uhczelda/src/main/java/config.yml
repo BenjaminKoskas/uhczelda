@@ -1,0 +1,13 @@
+teams:
+  Vent:
+    color: '§e'
+    maxplayers: 4
+  Feu:
+    color: '§c'
+    maxplayers: 4
+  Eau:
+    color: '§b'
+    maxplayers: 4
+  Terre:
+    color: '§2'
+    maxplayers: 4
