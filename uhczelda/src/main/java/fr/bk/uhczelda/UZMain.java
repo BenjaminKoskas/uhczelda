@@ -56,30 +56,30 @@ import fr.bk.uhczelda.listeners.SkinListener;
 import lombok.Getter;
 import lombok.Setter;
 
-public class UZMain extends JavaPlugin 
+public class UZMain extends JavaPlugin
 {
-	private static UZMain instance;	
-	public static UZMain getInstance() 
+	private static UZMain instance;
+	public static UZMain getInstance()
 	{
 		return instance;
 	}
-	
+
 	@Getter @Setter private UZGame game;
-	
+
 	@Getter private HashMap<String, Constructor<? extends Kit>> kits = new HashMap<String, Constructor<? extends Kit>>();
 	@Getter private HashMap<String, Constructor<? extends UZItem>> items = new HashMap<String, Constructor<? extends UZItem>>();
-	
+
 	@Getter private static String prefix = "";
-	
+
 	@Override
-	public void onEnable() 
+	public void onEnable()
 	{
 		instance = this;
-		
+
 		loadKits();
 		loadItems();
 		loadConfig();
-		
+
 		Bukkit.getPluginManager().registerEvents(new JoinListener(game), this);
 		Bukkit.getPluginManager().registerEvents(new QuitListener(), this);
 		Bukkit.getPluginManager().registerEvents(new ChatListener(), this);
@@ -91,37 +91,37 @@ public class UZMain extends JavaPlugin
 
 		for(Player player : Bukkit.getOnlinePlayers())
 			Bukkit.getPluginManager().callEvent(new PlayerJoinEvent(player, "is connected"));
-		
+
 		 ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
-		 
+
 		 protocolManager.addPacketListener(new PacketAdapter(this, ListenerPriority.NORMAL, PacketType.Play.Server.PLAYER_INFO) {
 				@Override
 				public void onPacketSending(PacketEvent event) {
 					UZPlayer player = game.thePlayer(event.getPlayer());
-					
+
 					WrapperPlayServerPlayerInfo info = new WrapperPlayServerPlayerInfo(event.getPacket());
 					ArrayList<PlayerInfoData> datas = new ArrayList<PlayerInfoData>();
-					
+
 					for(PlayerInfoData data : info.getData()) {
 						//UZPlayer uzp = game.thePlayer(Bukkit.getPlayer(data.getProfile().getUUID()));
-						
+
 						UZPlayer uzp = null;
-						for(UZPlayer p : game.getInGame()) 
+						for(UZPlayer p : game.getInGame())
 						{
-							if(p.getPlayer().getUniqueId() == data.getProfile().getUUID()) 
+							if(p.getPlayer().getUniqueId() == data.getProfile().getUUID())
 							{
 								uzp = p;
 							}
 						}
-						
+
 						if(uzp == null)
 							return;
-						
+
 						if(player.getGame() != null && player.getGame() == uzp.getGame()) {
 							UZUpdatePrefixEvent evt2 = new UZUpdatePrefixEvent(player.getGame(), uzp, player, "");
 							WrappedChatComponent displayName = data.getDisplayName();
 							Bukkit.getPluginManager().callEvent(evt2);
-							
+
 							if(evt2.getPrefix().length() > 0) {
 									try {
 									if(displayName != null) {
@@ -133,10 +133,10 @@ public class UZMain extends JavaPlugin
 									e.printStackTrace();
 								}
 							}
-							
+
 							UZSkinLoadEvent evt = new UZSkinLoadEvent(uzp.getGame(), uzp, player, data.getProfile());
 							Bukkit.getPluginManager().callEvent(evt);
-							
+
 							datas.add(new PlayerInfoData(evt.getProfile(), data.getLatency(), data.getGameMode(), displayName));
 						}else
 							datas.add(data);
@@ -144,7 +144,7 @@ public class UZMain extends JavaPlugin
 					info.setData(datas);
 				}
 			});
-		 
+
 		 WorldBorder border = Bukkit.getWorld("world").getWorldBorder();
 		 border.reset();
 		 /*border.setCenter(0,0);
@@ -152,19 +152,19 @@ public class UZMain extends JavaPlugin
 		 border.setDamageBuffer(10);
 		 border.setWarningDistance(5);
 		 border.setSize(1500);*/
-		 
+
 		 Bukkit.getWorld("world").setAutoSave(true);
 	}
-	
+
 	@Override
-	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) 
+	public boolean onCommand(CommandSender sender, Command command, String label, String[] args)
 	{
 		if(label.equalsIgnoreCase("uz")) {
 			if(!sender.isOp()) {
 				sender.sendMessage(prefix+"§4Erreur: Vous n'avez pas la permission...");
 				return true;
 			}
-			
+
 			if(args.length >= 1) {
 				if(args[0].equalsIgnoreCase("start")) {
 					if(game.isStarted()) {
@@ -173,8 +173,8 @@ public class UZMain extends JavaPlugin
 					}
 					game.updateStart();
 					return true;
-				} 
-				if(args[0].equalsIgnoreCase("end")) 
+				}
+				if(args[0].equalsIgnoreCase("end"))
 				{
 					if(!game.isStarted()) {
 						sender.sendMessage(prefix+"§4Erreur: La partie n'est pas lance...");
@@ -184,20 +184,20 @@ public class UZMain extends JavaPlugin
 					return true;
 				}
 			}
-		} 
-		
-		if (label.equalsIgnoreCase("revive")) 
+		}
+
+		if (label.equalsIgnoreCase("revive"))
 		{
-			if(args.length >= 1) 
+			if(args.length >= 1)
 			{
-				if(game.isStarted()) 
+				if(game.isStarted())
 				{
 					UZPlayer playerToRevive = null;
-					for(UZPlayer uzp : game.getDead()) 
+					for(UZPlayer uzp : game.getDead())
 					{
-						if(uzp.getPlayer().getName().equalsIgnoreCase(args[0])) 
+						if(uzp.getPlayer().getName().equalsIgnoreCase(args[0]))
 						{
-							playerToRevive = uzp;			
+							playerToRevive = uzp;
 						}
 					}
 					if(playerToRevive != null)
@@ -205,49 +205,49 @@ public class UZMain extends JavaPlugin
 				}
 			}
 		}
-		
-		if(label.equalsIgnoreCase("chat")) 
+
+		if(label.equalsIgnoreCase("chat"))
 		{
 			if(args.length >= 1) {
 				UZPlayer uzp = game.thePlayer((Player)sender);
-				if(args[0].equalsIgnoreCase("t")) 
+				if(args[0].equalsIgnoreCase("t"))
 				{
-					if(uzp.getTeam() != null) 
+					if(uzp.getTeam() != null)
 					{
 						uzp.setTalkInGeneral(false);
 						uzp.joinChat(uzp.getTeam().getTeamChat());
 						uzp.sendMessage("§6§lZelda §7» Tu as rejoint le chat d'équipe");
 					}
-					else 
+					else
 					{
 						uzp.sendMessage("§6§lZelda §7» Tu n'as pas d'équipe");
 					}
 					return true;
 				}
-				else if(args[0].equalsIgnoreCase("g")) 
+				else if(args[0].equalsIgnoreCase("g"))
 				{
 					uzp.setTalkInGeneral(true);
 					uzp.sendMessage("§6§lZelda §7» Tu as rejoint le chat général");
 					return true;
 				}
-			}		
+			}
 		}
 		return false;
 	}
-	
+
 	@Override
 	public void onDisable() {
 		for(Player p : Bukkit.getOnlinePlayers()) {
 			p.getPlayer().kickPlayer("Reload");
 		}
 		game.setStarted(false);
-		ProtocolLibrary.getProtocolManager().removePacketListeners(this);			
+		ProtocolLibrary.getProtocolManager().removePacketListeners(this);
 	}
 
-	public void loadConfig() 
-	{		
+	public void loadConfig()
+	{
 		game = new UZGame(16);
-		
+
 		UZTeam yellow = new UZTeam("Vent", "§e");
 		game.getTeams().add(yellow);
 		UZTeam red = new UZTeam("Feu", "§c");
@@ -259,8 +259,8 @@ public class UZMain extends JavaPlugin
 		UZTeam darkness = new UZTeam("Ténèbre", "§5");
 		game.getTeams().add(darkness);
 	}
-	
-	private void loadKits() 
+
+	private void loadKits()
 	{
 		try {
 			kits.put("Hylien", KHylien.class.getConstructor(UZGame.class));
@@ -274,8 +274,8 @@ public class UZMain extends JavaPlugin
 			e.printStackTrace();
 		}
 	}
-	
-	private void loadItems() 
+
+	private void loadItems()
 	{
 		try {
 			items.put("Compass", ICompass.class.getConstructor(UZGame.class));
@@ -289,16 +289,3 @@ public class UZMain extends JavaPlugin
 		}
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
