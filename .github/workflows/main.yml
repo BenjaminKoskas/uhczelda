@@ -1,0 +1,70 @@
+on:
+  push:
+    branches-ignore:
+      - 'ga-ignore-*'
+  pull_request:
+    branches-ignore:
+      - 'ga-ignore-*'
+env:
+  MIRROR_URL: "https://github.com/EpitechPromo2026/B-DOP-200-PAR-2-1-chocolatine-benjamin.koskas.git"
+  EXECUTABLES: "./a.out"
+jobs:
+  check_repository_cleanliness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: |
+          if [[ $(find . -type f -name '#*#') || $(find . -type f -name '*-'') || $(find . -type f -name '*pain_au_chocolat*'') || $(find . -type f -name '*.o') || $(find . -type f -name '*.a') || $(find . -type f -name '*.so') || $(find . -type f -name '*.gcno') || $(find . -type f -name '*.gcda') || $(find . -type f -name '*.gcov') || $(find . -path '*tmp*' -type f) ]];
+          then
+            for i in $(find . -type f -name '#*#' -o -type f -name '*~' -o -type f -name '*pain_au_chocolat*' -o -type f -name '*.o' -o -type f -name '*.a' -o -type f -name '*.so' -o -type f -name '*.gcno' -o -type f -name '*.gcda' -o -type f -name '*.gcov' -o -path '*tmp*' -type f)
+            do
+            echo "::error title=Unwanted file detected,file=$i,line=1::$i"
+            done
+            exit 1
+          else
+            exit 0
+          fi
+  check_program_compilation:
+    needs: check_repository_cleanliness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: make
+        timeout-minutes: 2
+      - run: make clean
+      - run: |
+          IFS=',' read -r -a array <<< "$EXECUTABLES"
+          for file in "${array[@]}"
+          do
+            if [[ ! -f $file ]]
+            then
+              echo "::error title=Couldn't run executables,line=1::File '$file' doesn't exists"
+              exit 1
+            fi
+            if [ ! -x $file ]
+            then
+              echo "::error title=Couldn't run executables,line=1::Not enough permissions for file '$file'"
+              exit 1
+            fi
+          done
+  run_tests:
+    needs: check_program_compilation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: make tests_run
+        timeout-minutes: 2
+  push_to_mirror:
+    needs: run_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - if: github.event_name == 'push'
+        uses: pixta-dev/repository-mirroring-action@v1
+        with:
+          target_repo_url:
+            $MIRROR_URL
+          ssh_private_key:
+            ${{ secrets.GIT_SSH_PRIVATE_KEY }}
